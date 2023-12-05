@@ -2,16 +2,11 @@
 #include <fstream>
 #include <string>
 #include <cctype>
-#include <set>
+#include <vector>
 
-using std::string, std::max, std::min;
-
-// read file as 2D array
-// go through array
-// skip periods until a number is found
-// determine length of number
-// search radius of 1 for a symbol
-// if symbol is found, add number to sum
+using std::string;
+using std::min;
+using std::max;
 
 int main() {
     int sum = 0;
@@ -31,46 +26,59 @@ int main() {
     }
     input.close();
 
-    // start processing
-    string symbols = "!@#$%^&*()_+-=[]{}\\|;':\",./<>?`~";
+    // identify start and end indicies of numbers
+    struct number {
+        int x0;
+        int y0;
+        int xf;
+    };
+
+    std::vector<number> numbers;
 
     for (int i = 0; i < 140; i++) {
         for (int j = 0; j < 140; j++) {
             if (isdigit(map[i][j])) {
-                // find the entire number
-                string num = "";
-                while (isdigit(map[i][j])) {
-                    num += map[i][j];
-                    j++;
+                number n;
+                n.x0 = j;
+                n.y0 = i;
+                
+                // determine length of number
+                int k = j;
+                while (isdigit(map[i][k])) {
+                    k++;
                 }
-                j -= num.length() + 1;
+                n.xf = k - 1;
 
-                // search neighbors for symbols
-                int row = max(0, i - 1);
-                int col = max(0, j - 1);
-                int rowMax = min(139, i + 1);
-                int colMax = min(139, j + 1);
-
-                bool found = false;
-                for (int r = row; r <= rowMax; r++) {
-                    for (int c = col; c <= colMax; c++) {
-                        if (symbols.find(map[r][c]) != string::npos) {
-                            found = true;
-                            break;
-                        }
-                    }
-                    if (found) {
-                        break;
-                    }
-                }
-
-                if (found) {
-                    sum += stoi(num);
-                }
-
-                // skip to end of number
-                j += num.length();
+                numbers.push_back(n);
+                j = k;
             }
+        }
+    }
+
+    // search for symbols
+    string symbols = "!@#$%^&*()_+{}|:\"<>?`-=[]\\;',/~";
+    for (int i = 0; i < numbers.size(); i++) {
+        int x0 = numbers[i].x0;
+        int y0 = numbers[i].y0;
+        int xf = numbers[i].xf;
+
+        bool found = false;
+        for (int j = max(0, y0 - 1); j <= min(139, y0 + 1); j++) {
+            for (int k = max(0, x0 - 1); k <= min(139, xf + 1); k++) {
+                if (symbols.find(map[j][k]) != string::npos) {
+                    found = true;
+                    break;
+                }
+            }
+        }
+
+        if (found) {
+            string num = "";
+            for (int j = x0; j <= xf; j++) {
+                num += map[y0][j];
+            }
+            sum += stoi(num);
+            std::cout << num << std::endl;
         }
     }
 
