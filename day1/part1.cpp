@@ -5,9 +5,10 @@
 
 int main() {
     std::ifstream input("input.txt");
-    int sum = 0;
     
+    int sum = 0;
     std::string line;
+    
     while (std::getline(input, line)) {
         std::string first;
         std::string last;
