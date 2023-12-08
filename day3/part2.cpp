@@ -5,13 +5,13 @@
 #include <vector>
 
 using std::string;
+using std::vector;
 using std::min;
 using std::max;
 
-int main() {
-    int sum = 0;
-    
+int main() {    
     // initialize 2D array [row][col]
+    // down is positive y, right is positive x
     char** map = new char*[140];
     for (int i = 0; i < 140; i++) {
         map[i] = new char[140];
@@ -19,92 +19,100 @@ int main() {
 
     // read file into 2D array
     std::ifstream input("input.txt");
-    for (int i = 0; i < 140; i++) {
-        for (int j = 0; j < 140; j++) {
+    for (size_t i = 0; i < 140; i++) {
+        for (size_t j = 0; j < 140; j++) {
             input >> map[i][j];
         }
     }
     input.close();
 
-    // identify start and end indicies of numbers
-    //im gay, suck my dick
-    struct number {
-        int x0;
-        int y0;
-        int xf;
+    // find all potential gear ratios
+    struct starPos {
+        int x;
+        int y;
     };
 
-    std::vector<number> numbers;
-
-    for (int i = 0; i < 140; i++) {
-        for (int j = 0; j < 140; j++) {
-            if (isdigit(map[i][j])) {
-                number n;
-                n.x0 = j;
-                n.y0 = i;
-                
-                // determine length of number
-                int k = j;
-                while (isdigit(map[i][k])) {
-                    k++;
-                }
-                n.xf = k - 1;
-
-                numbers.push_back(n);
-                j = k;
+    vector<starPos> stars;
+    for (size_t row = 0; row < 140; row++) {
+        for (size_t col = 0; col < 140; col++) {
+            if (map[row][col] == '*') {
+                starPos star;
+                star.x = col;
+                star.y = row;
+                stars.push_back(star);
             }
         }
     }
 
-    // search for gear ratios
-    for (int i = 0; i < numbers.size(); i++) {
-        int x0 = numbers[i].x0;
-        int y0 = numbers[i].y0;
-        int xf = numbers[i].xf;
+    // a gear ratio is a * character adjacent to exactly two numbers
+    struct gearRatio {
+        int num1;
+        int num2;
+    };
 
-        bool found = false;
-        for (int j = max(0, y0 - 1); j <= min(139, y0 + 1); j++) {
-            for (int k = max(0, x0 - 1); k <= min(139, xf + 1); k++) {
-                if (map[j][k] == '*') {
-                    for (int l = max(0, j - 1); l <= min(139, j + 1); l++) {
-                        if (l == j) {
-                            continue;
+    // find all gear ratios
+    vector<gearRatio> ratios;
+    for (size_t i = 0; i < stars.size(); i++) {
+        std::cout << "checking star at " << stars[i].x << ", " << stars[i].y << std::endl;
+        int firstNum = 0;
+        int secondNum = 0;
+
+        // check all adjacent cells for numbers
+        vector<int> adjacentNums;
+        for (size_t row = max(0, stars[i].y - 1); row <= min(139, stars[i].y + 1); row++) {
+            for (size_t col = max(0, stars[i].x - 1); col < min(139, stars[i].x + 2); col++) {
+                std::cout << "checking cell at " << col << ", " << row << " has value " << map[row][col] << std::endl;
+                if (isdigit(map[row][col])) {
+                    std::cout << "star at " << stars[i].x << ", " << stars[i].y << " has adjacent number at " << col << ", " << row << std::endl;
+                    // figure out entire number
+                    int startCol = col;
+                    while (startCol > 0 && isdigit(map[row][startCol - 1])) {
+                        startCol--;
+                    }
+                    int endCol = col;
+                    while (endCol < 139 && isdigit(map[row][endCol + 1])) {
+                        endCol++;
+                    }
+
+                    string numStr = "";
+                    for (size_t j = startCol; j <= endCol; j++) {
+                        numStr += map[row][j];
+                    }
+
+                    // check if number is already in adjacentNums
+                    bool isDuplicate = false;
+                    for (size_t j = 0; j < adjacentNums.size(); j++) {
+                        if (adjacentNums[j] == std::stoi(numStr)) {
+                            isDuplicate = true;
+                            break;
                         }
+                    }
 
-                        for (int m = max(0, k - 1); m <= min(139, k + 1); m++) {
-                            if (m == k) {
-                                continue;
-                            }
-
-                            if (isdigit(map[l][m])) {
-                                string num1 = "";
-                                for (int n = numbers[i].x0; n <= numbers[i].xf; n++) {
-                                    num1 += map[numbers[i].y0][n];
-                                }
-
-                                int o = m;
-                                while (isdigit(map[l][o])) {
-                                    o--;
-                                }
-                                o++;
-
-                                string num2 = "";
-                                for (int n = o; n <= m; n++) {
-                                    num2 += map[l][n];
-                                }
-
-                                sum += stoi(num1) * stoi(num2);
-                                std::cout << num1 << " * " << num2 << " = " << stoi(num1) * stoi(num2) << std::endl;
-                            }
-                        }
+                    if (!isDuplicate) {
+                        adjacentNums.push_back(std::stoi(numStr));
+                        std::cout << "added " << std::stoi(numStr) << " to adjacentNums" << std::endl;
                     }
                 }
             }
         }
+
+        // check if gear ratio
+        if (adjacentNums.size() == 2) {
+            gearRatio ratio;
+            ratio.num1 = adjacentNums[0];
+            ratio.num2 = adjacentNums[1];
+            ratios.push_back(ratio);
+        }
     }
 
-    // deallocate 2D array cum in mt mouth
-    for (int i = 0; i < 140; i++) {
+    // sum all gear ratios
+    int sum = 0;
+    for (size_t i = 0; i < ratios.size(); i++) {
+        sum += ratios[i].num1 * ratios[i].num2;
+    }
+
+    // deallocate 2D array
+    for (size_t i = 0; i < 140; i++) {
         delete [] map[i];
     }
     delete [] map;
