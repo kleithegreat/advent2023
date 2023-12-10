@@ -30,7 +30,7 @@ int main() {
 
     vector<Card> cards;
 
-    for (int i = 0; i < input.size(); i++) {
+    for (size_t i = 0; i < input.size(); i++) {
         int COLON_POS = 8;
         int PIPE_POS = 40;
 
@@ -53,10 +53,15 @@ int main() {
         cards.push_back(card);
     }
 
-    int totalCards = 0;
+    // array to track counts of all cards - index + 1 = card number
+    int* cardCounts = new int[100];
+    for (size_t i = 0; i < cards.size(); i++) {
+        cardCounts[i] = 1;
+    }
 
-    for (int i = 0; i < cards.size(); i++) {
-        totalCards++;
+    // loop through cards until all winnings have been processed
+    for (size_t i = 0; i < cards.size(); i++) {
+        int currentCount = cardCounts[i];
 
         int matchingCards = 0;
         for (int j = 0; j < cards[i].winners.size(); j++) {
@@ -65,13 +70,20 @@ int main() {
             }
         }
 
-        // must implement some recursion here?
-
-        cout << "Card " << i + 1 << ": " << matchingCards << endl;
+        for (size_t j = i + 1; j < i + 1 + matchingCards; j++) {
+            cardCounts[j] += currentCount;
+        }
     }
-    
 
-    cout << "Total cards: " << totalCards << endl;
+    // sum all counts
+    int sum = 0;
+    for (size_t i = 0; i < cards.size(); i++) {
+        sum += cardCounts[i];
+    }
+
+    cout << sum << endl;
+
+    delete[] cardCounts;
 
     return 0;
 }
