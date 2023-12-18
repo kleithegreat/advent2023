@@ -12,6 +12,7 @@
 #include <list>
 #include <map>
 #include <utility>
+#include <unordered_set>
 
 using std::vector;
 using std::string;
@@ -53,14 +54,37 @@ int main() {
     inputFile.close();
 
     // start seed paths by reading first line
+    struct seedRange {
+        long long start;
+        long long length;
+    };
+
     stringstream ss(rawInput[0]);
     string token;
 
+    vector<seedRange> seedRanges;
     getline(ss, token, ' ');
+    while (getline(ss, token, ' ')) {
+        long long start = std::stoll(token);
+        getline(ss, token, ' ');
+        long long length = std::stoll(token);
+
+        seedRange range = {start, length};
+        seedRanges.push_back(range);
+    }
+
+    std::unordered_set<long long> seedSet;
+
+    for (size_t i = 0; i < seedRanges.size(); i++) {
+        for (long long j = seedRanges[i].start; j < seedRanges[i].start + seedRanges[i].length; j++) {
+            cout << j << endl;
+            seedSet.insert(j);
+        }
+    }
 
     vector<std::list<long long>> seedPaths;
-    while (getline(ss, token, ' ')) {
-        seedPaths.push_back({std::stoll(token)});
+    for (auto it = seedSet.begin(); it != seedSet.end(); it++) {
+        seedPaths.push_back({*it});
     }
 
     // read in conversion maps
@@ -104,33 +128,12 @@ int main() {
         {categories[5], conversionMaps[5]},
         {categories[6], conversionMaps[6]}
     };
-    
-    // print out maps for debugging
-    for (size_t i = 0; i < categories.size(); i++) {
-        cout << categories[i] << endl;
-        for (size_t j = 0; j < maps[categories[i]].size(); j++) {
-            cout << maps[categories[i]][j].destStart << " " << maps[categories[i]][j].sourceStart << " " << maps[categories[i]][j].range << endl;
-        }
-        cout << endl;
-    }
 
     // convert each seed through all categories
     for (size_t i = 0; i < seedPaths.size(); i++) {
         for (size_t j = 0; j < categories.size(); j++) {
             seedPaths[i].push_back(categoryConvert(categories[j], seedPaths[i].back()));
         }
-    }
-
-    // print out seed paths for debugging
-    for (size_t i = 0; i < seedPaths.size(); i++) {
-        cout << "Seed " << i << endl;
-        for (auto it = seedPaths[i].begin(); it != seedPaths[i].end(); it++) {
-            cout << *it << " ";
-        }
-        cout << endl;
-
-        // print path length
-        cout << seedPaths[i].size() << endl;
     }
 
     // print lowest location number
